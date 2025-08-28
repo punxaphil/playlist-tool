@@ -21,11 +21,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run merge script
+      - name: Run merge command
         env:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
           SPOTIFY_SOURCE_PLAYLIST_IDS: ${{ secrets.SPOTIFY_SOURCE_PLAYLIST_IDS }}
           SPOTIFY_DESTINATION_PLAYLIST_ID: ${{ secrets.SPOTIFY_DESTINATION_PLAYLIST_ID }}
-        run: node merge-playlists.js --merge
+        run: node playlist-tool.js merge

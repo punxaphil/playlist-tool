@@ -42,9 +42,20 @@ async function authenticate(silent = false) {
   if (!silent) console.log('--- Authentication successful ---');
 }
 
+async function getPlaylistName(playlistId, silent = false) {
+  try {
+    const res = await spotifyApi.getPlaylist(playlistId);
+    return res?.body?.name || playlistId;
+  } catch (e) {
+    if (!silent) console.error(`Failed to fetch name for playlist ${playlistId}`, e.body || e.message);
+    return playlistId;
+  }
+}
+
 module.exports = {
   spotifyApi,
   fetchPaginatedTracks,
   getAllTracks,
   authenticate,
+  getPlaylistName,
 };
