@@ -13,8 +13,13 @@ if (!process.env.SPOTIFY_SOURCE_PLAYLIST_IDS || !process.env.SPOTIFY_DESTINATION
   process.exit(1);
 }
 
-const sourcePlaylistIds = process.env.SPOTIFY_SOURCE_PLAYLIST_IDS.split(',');
-const destinationPlaylistId = process.env.SPOTIFY_DESTINATION_PLAYLIST_ID;
+const sourcePlaylistIds = process.env.SPOTIFY_SOURCE_PLAYLIST_IDS.split(',').map(id => id.trim()).filter(Boolean);
+const destinationPlaylistId = process.env.SPOTIFY_DESTINATION_PLAYLIST_ID.trim();
+
+if (sourcePlaylistIds.length === 0) {
+  console.error('Error: No source playlist IDs are configured. Please check your SPOTIFY_SOURCE_PLAYLIST_IDS environment variable.');
+  process.exit(1);
+}
 
 async function fetchPaginatedTracks(playlistId) {
   let tracks = [];
