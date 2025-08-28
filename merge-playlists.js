@@ -134,8 +134,8 @@ async function addTrackIndividually(playlistId, trackChunk) {
 
 async function addTracksInChunks(playlistId, tracks) {
   console.log(`Adding ${tracks.length} tracks to playlist ID: ${playlistId}`);
-  for (let i = 0; i < tracks.length; i += 10) {
-    const chunk = tracks.slice(i, i + 10);
+  for (let i = 0; i < tracks.length; i += 100) {
+    const chunk = tracks.slice(i, i + 100);
     const trackUris = chunk.map(t => t.uri);
     try {
       console.log(`  - Adding chunk of ${chunk.length} tracks`);
