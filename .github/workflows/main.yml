@@ -31,4 +31,4 @@ jobs:
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
           SPOTIFY_SOURCE_PLAYLIST_IDS: ${{ secrets.SPOTIFY_SOURCE_PLAYLIST_IDS }}
           SPOTIFY_DESTINATION_PLAYLIST_ID: ${{ secrets.SPOTIFY_DESTINATION_PLAYLIST_ID }}
-        run: node merge-playlists.js
+        run: node merge-playlists.js --merge
