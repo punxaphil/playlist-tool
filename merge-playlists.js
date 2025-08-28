@@ -7,43 +7,73 @@ const spotifyApi = new SpotifyWebApi({
 });
 
 const isDryRun = process.argv.includes('--dry-run');
+const checkUnavailable = process.argv.includes('--check-unavailable');
+const doMerge = process.argv.includes('--merge');
 
 const failedTracks = [];
 
-console.log('--- Starting Playlist Merge Script ---');
-console.log(`Dry Run Mode: ${isDryRun}`);
+function printHelp() {
+  console.log(`
+  Spotify Playlist Merger
 
-if (!process.env.SPOTIFY_SOURCE_PLAYLIST_IDS || !process.env.SPOTIFY_DESTINATION_PLAYLIST_ID) {
-  console.error('Error: Playlist IDs are not configured. Please set SPOTIFY_SOURCE_PLAYLIST_IDS and SPOTIFY_DESTINATION_PLAYLIST_ID environment variables.');
-  process.exit(1);
+  Usage: node merge-playlists.js [options]
+
+  Options:
+    --merge               Merge the source playlists into the destination playlist.
+    --dry-run             Simulate the merge process without making any changes.
+    --check-unavailable   Check the source playlists for local tracks and print them.
+    --help                Show this help message.
+  `);
 }
 
-const sourcePlaylistIds = process.env.SPOTIFY_SOURCE_PLAYLIST_IDS.split(',').map(id => id.trim()).filter(Boolean);
-const destinationPlaylistId = process.env.SPOTIFY_DESTINATION_PLAYLIST_ID.trim();
-
-console.log('--- Playlist Configuration ---');
-console.log('Source Playlist IDs:', sourcePlaylistIds);
-console.log('Destination Playlist ID:', destinationPlaylistId);
-
-if (sourcePlaylistIds.length === 0) {
-  console.error('Error: No source playlist IDs are configured. Please check your SPOTIFY_SOURCE_PLAYLIST_IDS environment variable.');
-  process.exit(1);
+if (process.argv.length === 2 || process.argv.includes('--help')) {
+  printHelp();
+  process.exit(0);
 }
 
-async function fetchPaginatedTracks(playlistId) {
-  console.log(`Fetching paginated tracks for playlist ID: ${playlistId}`);
+async function main() {
+  if (checkUnavailable) {
+    await runCheckUnavailable();
+    return;
+  }
+
+  console.log('--- Starting Playlist Merge Script ---');
+  console.log(`Dry Run Mode: ${isDryRun}`);
+
+  if (!process.env.SPOTIFY_SOURCE_PLAYLIST_IDS || !process.env.SPOTIFY_DESTINATION_PLAYLIST_ID) {
+    console.error('Error: Playlist IDs are not configured. Please set SPOTIFY_SOURCE_PLAYLIST_IDS and SPOTIFY_DESTINATION_PLAYLIST_ID environment variables.');
+    process.exit(1);
+  }
+
+  console.log('--- Playlist Configuration ---');
+  console.log('Source Playlist IDs:', sourcePlaylistIds);
+  console.log('Destination Playlist ID:', destinationPlaylistId);
+
+  if (sourcePlaylistIds.length === 0) {
+    console.error('Error: No source playlist IDs are configured. Please check your SPOTIFY_SOURCE_PLAYLIST_IDS environment variable.');
+    process.exit(1);
+  }
+
+  await mergePlaylists();
+}
+
+const sourcePlaylistIds = process.env.SPOTIFY_SOURCE_PLAYLIST_IDS ? process.env.SPOTIFY_SOURCE_PLAYLIST_IDS.split(',').map(id => id.trim()).filter(Boolean) : [];
+const destinationPlaylistId = process.env.SPOTIFY_DESTINATION_PLAYLIST_ID ? process.env.SPOTIFY_DESTINATION_PLAYLIST_ID.trim() : '';
+
+async function fetchPaginatedTracks(playlistId, silent = false) {
+  if (!silent) console.log(`Fetching paginated tracks for playlist ID: ${playlistId}`);
   let tracks = [];
   let offset = 0;
   const limit = 100;
   let response;
   try {
     do {
-      console.log(`  - Fetching tracks, offset: ${offset}`);
+      if (!silent) console.log(`  - Fetching tracks, offset: ${offset}`);
       response = await spotifyApi.getPlaylistTracks(playlistId, { offset, limit });
       tracks = tracks.concat(response.body.items);
       offset += limit;
     } while (response.body.next);
-    console.log(`  - Successfully fetched ${tracks.length} track items for playlist ID: ${playlistId}`);
+    if (!silent) console.log(`  - Successfully fetched ${tracks.length} track items for playlist ID: ${playlistId}`);
     return tracks;
   } catch (err) {
     console.error(`Error fetching tracks for playlist ID: ${playlistId}`, err);
@@ -51,11 +81,11 @@ async function fetchPaginatedTracks(playlistId) {
   }
 }
 
-async function getAllTracks(playlistId) {
-  console.log(`Getting all tracks for playlist ID: ${playlistId}`);
-  const items = await fetchPaginatedTracks(playlistId);
+async function getAllTracks(playlistId, silent = false) {
+  if (!silent) console.log(`Getting all tracks for playlist ID: ${playlistId}`);
+  const items = await fetchPaginatedTracks(playlistId, silent);
   const tracks = items.map(item => item.track).filter(Boolean);
-  console.log(`  - Found ${tracks.length} valid tracks for playlist ID: ${playlistId}`);
+  if (!silent) console.log(`  - Found ${tracks.length} valid tracks for playlist ID: ${playlistId}`);
   return tracks;
 }
 
@@ -110,18 +140,45 @@ async function addTracksInChunks(playlistId, tracks) {
   console.log('  - Finished adding tracks.');
 }
 
-async function getSourceTracks() {
-  console.log('--- Fetching and Combining Source Tracks ---');
+async function getSourceTracks(silent = false) {
+  if (!silent) console.log('--- Fetching and Combining Source Tracks ---');
   let allSourceTracks = [];
   for (const playlistId of sourcePlaylistIds) {
-    console.log(`Fetching tracks from source playlist ID: ${playlistId}`);
-    const tracks = await getAllTracks(playlistId);
+    if (!silent) console.log(`Fetching tracks from source playlist ID: ${playlistId}`);
+    const tracks = await getAllTracks(playlistId, silent);
     allSourceTracks = allSourceTracks.concat(tracks);
-    console.log(`  - Fetched ${tracks.length} tracks. Total tracks so far: ${allSourceTracks.length}`);
+    if (!silent) console.log(`  - Fetched ${tracks.length} tracks. Total tracks so far: ${allSourceTracks.length}`);
   }
   const uniqueTracks = Array.from(new Map(allSourceTracks.map(t => [t.uri, t])).values());
-  console.log(`Total unique tracks from all sources: ${uniqueTracks.length}`);
+  if (!silent) console.log(`Total unique tracks from all sources: ${uniqueTracks.length}`);
   return uniqueTracks;
+}
+
+async function runCheckUnavailable() {
+  const data = await spotifyApi.refreshAccessToken();
+  spotifyApi.setAccessToken(data.body['access_token']);
+
+  const uniqueSourceTracks = await getSourceTracks(true);
+  const localTracks = uniqueSourceTracks.filter(track => track.uri.startsWith('spotify:local'));
+
+  if (localTracks.length > 0) {
+    localTracks.forEach(track => {
+      console.log(`- ${track.name} by ${track.artists.map(a => a.name).join(', ')} (URI: ${track.uri})`);
+    });
+  }
+}
+
+async function getNonLocalSourceTracks() {
+  const uniqueTracks = await getSourceTracks();
+  const nonLocalTracks = uniqueTracks.filter(track => {
+    const isLocal = track.uri.startsWith('spotify:local');
+    if (isLocal) {
+      console.log(`  - Filtering out local track: ${track.name} by ${track.artists.map(a => a.name).join(', ')} (URI: ${track.uri})`);
+    }
+    return !isLocal;
+  });
+  console.log(`Found ${nonLocalTracks.length} non-local tracks out of ${uniqueTracks.length} unique tracks.`);
+  return nonLocalTracks;
 }
 
 function logDryRunSummary(destinationTracks, uniqueSourceTracks) {
@@ -136,7 +193,7 @@ function logDryRunSummary(destinationTracks, uniqueSourceTracks) {
 async function executeDryRun() {
   console.log('--- EXECUTING DRY RUN ---');
   const [uniqueSourceTracks, destinationTracks] = await Promise.all([
-    getSourceTracks(),
+    getNonLocalSourceTracks(),
     getAllTracks(destinationPlaylistId),
   ]);
   logDryRunSummary(destinationTracks, uniqueSourceTracks);
@@ -144,7 +201,7 @@ async function executeDryRun() {
 
 async function executeMerge() {
   console.log('--- EXECUTING MERGE ---');
-  const uniqueSourceTracks = await getSourceTracks();
+  const uniqueSourceTracks = await getNonLocalSourceTracks();
   console.log(`Preparing to clear destination playlist and add ${uniqueSourceTracks.length} unique tracks.`);
   await clearPlaylist(destinationPlaylistId);
   await addTracksInChunks(destinationPlaylistId, uniqueSourceTracks);
@@ -157,10 +214,14 @@ async function mergePlaylists() {
     const data = await spotifyApi.refreshAccessToken();
     spotifyApi.setAccessToken(data.body['access_token']);
     console.log('  - Authentication successful.');
+
     if (isDryRun) {
       await executeDryRun();
-    } else {
+    } else if (doMerge) {
       await executeMerge();
+    } else {
+      console.log('\nNo valid command specified.');
+      printHelp();
     }
   } catch (err) {
     console.error('--- A critical error occurred! ---');
@@ -174,4 +235,4 @@ async function mergePlaylists() {
   }
 }
 
-mergePlaylists();
+main();
