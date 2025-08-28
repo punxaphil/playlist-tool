@@ -8,6 +8,8 @@ const spotifyApi = new SpotifyWebApi({
 
 const isDryRun = process.argv.includes('--dry-run');
 
+const failedTracks = [];
+
 console.log('--- Starting Playlist Merge Script ---');
 console.log(`Dry Run Mode: ${isDryRun}`);
 
@@ -79,12 +81,31 @@ async function clearPlaylist(playlistId) {
   console.log('  - Playlist cleared successfully.');
 }
 
-async function addTracksInChunks(playlistId, trackUris) {
-  console.log(`Adding ${trackUris.length} tracks to playlist ID: ${playlistId}`);
-  for (let i = 0; i < trackUris.length; i += 100) {
-    const chunk = trackUris.slice(i, i + 100);
-    console.log(`  - Adding chunk of ${chunk.length} tracks`);
-    await spotifyApi.addTracksToPlaylist(playlistId, chunk);
+async function addTrackIndividually(playlistId, trackChunk) {
+  console.log(`  - Retrying failed chunk... adding ${trackChunk.length} tracks one by one.`);
+  for (const track of trackChunk) {
+    try {
+      console.log(`    - Adding track: ${track.name} by ${track.artists.map(a => a.name).join(', ')}`);
+      await spotifyApi.addTracksToPlaylist(playlistId, [track.uri]);
+    } catch (err) {
+      console.error(`    - FAILED to add track: ${track.uri}. Skipping.`, err.body);
+      failedTracks.push(track);
+    }
+  }
+}
+
+async function addTracksInChunks(playlistId, tracks) {
+  console.log(`Adding ${tracks.length} tracks to playlist ID: ${playlistId}`);
+  for (let i = 0; i < tracks.length; i += 10) {
+    const chunk = tracks.slice(i, i + 10);
+    const trackUris = chunk.map(t => t.uri);
+    try {
+      console.log(`  - Adding chunk of ${chunk.length} tracks`);
+      await spotifyApi.addTracksToPlaylist(playlistId, trackUris);
+    } catch (err) {
+      console.error(`  - FAILED to add chunk.`, err.body);
+      await addTrackIndividually(playlistId, chunk);
+    }
   }
   console.log('  - Finished adding tracks.');
 }
@@ -124,10 +145,9 @@ async function executeDryRun() {
 async function executeMerge() {
   console.log('--- EXECUTING MERGE ---');
   const uniqueSourceTracks = await getSourceTracks();
-  const uniqueTrackUris = uniqueSourceTracks.map(track => track.uri);
-  console.log(`Preparing to clear destination playlist and add ${uniqueTrackUris.length} unique tracks.`);
+  console.log(`Preparing to clear destination playlist and add ${uniqueSourceTracks.length} unique tracks.`);
   await clearPlaylist(destinationPlaylistId);
-  await addTracksInChunks(destinationPlaylistId, uniqueTrackUris);
+  await addTracksInChunks(destinationPlaylistId, uniqueSourceTracks);
   console.log('--- Playlists merged successfully! ---');
 }
 
@@ -146,6 +166,11 @@ async function mergePlaylists() {
     console.error('--- A critical error occurred! ---');
     console.error('Something went wrong!', err);
     process.exit(1);
+  } finally {
+    if (failedTracks.length > 0) {
+      console.log('\n--- The following tracks failed to be added ---');
+      failedTracks.forEach(track => console.log(`- ${track.name} by ${track.artists.map(a => a.name).join(', ')} (URI: ${track.uri})`));
+    }
   }
 }
 
