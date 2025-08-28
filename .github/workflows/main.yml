@@ -1,0 +1,31 @@
+name: Merge Spotify Playlists
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # Runs every day at 5 AM UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run merge script
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          SPOTIFY_SOURCE_PLAYLIST_IDS: ${{ secrets.SPOTIFY_SOURCE_PLAYLIST_IDS }}
+          SPOTIFY_DESTINATION_PLAYLIST_ID: ${{ secrets.SPOTIFY_DESTINATION_PLAYLIST_ID }}
+        run: node merge-playlists.js
