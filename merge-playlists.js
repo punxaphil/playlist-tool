@@ -26,6 +26,14 @@ function printHelp() {
   `);
 }
 
+function shuffleArray(array) {
+  console.log('  - Shuffling tracks...');
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
 if (process.argv.length === 2 || process.argv.includes('--help')) {
   printHelp();
   process.exit(0);
@@ -196,12 +204,14 @@ async function executeDryRun() {
     getNonLocalSourceTracks(),
     getAllTracks(destinationPlaylistId),
   ]);
+  shuffleArray(uniqueSourceTracks);
   logDryRunSummary(destinationTracks, uniqueSourceTracks);
 }
 
 async function executeMerge() {
   console.log('--- EXECUTING MERGE ---');
   const uniqueSourceTracks = await getNonLocalSourceTracks();
+  shuffleArray(uniqueSourceTracks);
   console.log(`Preparing to clear destination playlist and add ${uniqueSourceTracks.length} unique tracks.`);
   await clearPlaylist(destinationPlaylistId);
   await addTracksInChunks(destinationPlaylistId, uniqueSourceTracks);
