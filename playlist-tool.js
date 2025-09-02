@@ -81,7 +81,7 @@ async function doCheckUnavailable(sources) {
 async function doDupes(verbose, ids) {
   await authenticate(true);
   if (!ids || !ids.length) {
-    console.error('Usage: --cmd dupes <playlistId> <playlistId> ... [--verbose]');
+    console.error('Usage: --cmd dupes --source <id> [--source <id> ...] [--verbose]');
     process.exitCode = 1;
     return;
   }
