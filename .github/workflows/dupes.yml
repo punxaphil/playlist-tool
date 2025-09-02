@@ -28,5 +28,8 @@ jobs:
           SOFT_ADDS: 0eHnbTUBCBaDVXibzCSymN
           TVEKSAMT: 4SNjbtv34S4Ra7TMNTnERL
         run: |
-          node playlist-tool.js --cmd dupes  --source ${{ env.SOFT }}  --source ${{ env.SOFT_ADDS }}  --source ${{ env.TVEKSAMT }}
-
+          node playlist-tool.js \
+            --cmd dupes \
+            --source ${{ env.SOFT }} \
+            --source ${{ env.SOFT_ADDS }} \
+            --source ${{ env.TVEKSAMT }}
