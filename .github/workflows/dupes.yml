@@ -1,11 +1,13 @@
 name: Find Duplicate Tracks
 
 on:
-  workflow_dispatch: {}
+  schedule:
+    - cron: '0 5 * * 1' # Runs every Monday at 5 AM UTC
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   dupes:
     uses: ./.github/workflows/playlist-tool.yml
     with:
       # SOFT, SOFT_ADDS, TVEKSAMT
-      args: "--cmd dupes --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --source 4SNjbtv34S4Ra7TMNTnERL"
+      args: "--cmd dupes --notify-email --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --source 4SNjbtv34S4Ra7TMNTnERL"
