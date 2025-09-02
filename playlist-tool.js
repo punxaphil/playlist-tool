@@ -1,7 +1,7 @@
 const arg = require('arg');
 const { authenticate, getAllTracks } = require('./src/spotify');
 const { getNonLocalSourceTracks, runCheckUnavailable } = require('./src/tracks');
-const { shuffleArray, logDryRunSummary, printDuplicatesReport } = require('./src/ui');
+const { shuffleArray, logDryRunSummary, printDuplicatesReport, printHelp } = require('./src/ui');
 const { buildMap, toDuplicates } = require('./src/dupes');
 
 function parseArgs(tokens) {
@@ -168,7 +168,6 @@ async function main() {
   }
   // unknown command -> fail with helpful message
   console.error(`Unknown command: ${cmd}`);
-  const { printHelp } = require('./src/ui');
   printHelp();
   process.exitCode = 2;
 }
