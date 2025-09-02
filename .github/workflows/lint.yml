@@ -1,0 +1,42 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: Run ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fail on eslint-disable comments
+        run: |
+          echo "Checking repository for 'eslint-disable' comments..."
+          if grep -RIn --exclude-dir=node_modules -E "eslint-disable(-next-line|-line)?" .; then
+            echo "Found eslint-disable comments; remove them or update ESLint config."
+            exit 1
+          else
+            echo "No eslint-disable comments found."
+          fi
+
+      - name: Fail on eslint-disable comments
+        run: |
+          if git grep -n -- "eslint-disable" >/dev/null 2>&1; then
+            echo "Found eslint-disable comments in repository. Please remove them.";
+            git grep -n -- "eslint-disable" || true;
+            exit 1;
+          fi
+
+      - name: Run linter
+        run: npm run lint
