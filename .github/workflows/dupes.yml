@@ -5,31 +5,7 @@ on:
 
 jobs:
   dupes:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run duplicates report
-        env:
-          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
-          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
-          SOFT: 7xUa8Da5yH2PrFwLpPgAJr
-          SOFT_ADDS: 0eHnbTUBCBaDVXibzCSymN
-          TVEKSAMT: 4SNjbtv34S4Ra7TMNTnERL
-        run: |
-          node playlist-tool.js \
-            --cmd dupes \
-            --source ${{ env.SOFT }} \
-            --source ${{ env.SOFT_ADDS }} \
-            --source ${{ env.TVEKSAMT }}
+    uses: ./.github/workflows/playlist-tool.yml
+    with:
+      # SOFT, SOFT_ADDS, TVEKSAMT
+      args: "--cmd dupes --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --source 4SNjbtv34S4Ra7TMNTnERL"

@@ -7,32 +7,7 @@ on:
 
 jobs:
   merge:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run merge command
-        env:
-          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
-          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
-          SOFT: 7xUa8Da5yH2PrFwLpPgAJr
-          SOFT_ADDS: 0eHnbTUBCBaDVXibzCSymN
-          SOFTER: 4q2kOivL1o21qCG4vEhaPi
-        # Hardcoded playlist ids: replace the example IDs below with the real playlist IDs.
-        run: |
-          node playlist-tool.js \
-            --cmd merge \
-            --source ${{ env.SOFT }} \
-            --source ${{ env.SOFT_ADDS }} \
-            --dest ${{ env.SOFTER }}
+    uses: ./.github/workflows/playlist-tool.yml
+    with:
+      # SOFT, SOFT_ADDS, SOFTER
+      args: "--cmd merge --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --dest 4q2kOivL1o21qCG4vEhaPi"
