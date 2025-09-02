@@ -12,17 +12,18 @@ async function fetchPaginatedTracks(playlistId, silent = false) {
   let tracks = [];
   let offset = 0;
   try {
-    while (true) {
+    let hasNext = true;
+    while (hasNext) {
       if (!silent) console.log(`  - Fetching tracks, offset: ${offset}`);
       const response = await spotifyApi.getPlaylistTracks(playlistId, { offset, limit: API_LIMIT });
       tracks = tracks.concat(response.body.items);
-      if (!response.body.next) break;
-      offset += API_LIMIT;
+      hasNext = Boolean(response.body.next);
+      if (hasNext) offset += API_LIMIT;
     }
     if (!silent) console.log(`  - Successfully fetched ${tracks.length} track items for playlist ID: ${playlistId}`);
     return tracks;
   } catch (err) {
-    console.error(`Error fetching tracks for playlist ID: ${playlistId}`, err);
+    console.error(`Error fetching tracks for playlist ID: ${playlistId}`, err && err.message ? err.message : err);
     throw err;
   }
 }
@@ -42,14 +43,9 @@ async function authenticate(silent = false) {
   if (!silent) console.log('--- Authentication successful ---');
 }
 
-async function getPlaylistName(playlistId, silent = false) {
-  try {
-    const res = await spotifyApi.getPlaylist(playlistId);
-    return res?.body?.name || playlistId;
-  } catch (e) {
-    if (!silent) console.error(`Failed to fetch name for playlist ${playlistId}`, e.body || e.message);
-    return playlistId;
-  }
+async function getPlaylistName(playlistId) {
+  const res = await spotifyApi.getPlaylist(playlistId);
+  return res?.body?.name || playlistId;
 }
 
 module.exports = {

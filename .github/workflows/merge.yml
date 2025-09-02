@@ -26,6 +26,13 @@ jobs:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
-          SPOTIFY_SOURCE_PLAYLIST_IDS: ${{ secrets.SPOTIFY_SOURCE_PLAYLIST_IDS }}
-          SPOTIFY_DESTINATION_PLAYLIST_ID: ${{ secrets.SPOTIFY_DESTINATION_PLAYLIST_ID }}
-        run: node playlist-tool.js merge
+          SOFT: 7xUa8Da5yH2PrFwLpPgAJr
+          SOFT_ADDS: 0eHnbTUBCBaDVXibzCSymN
+          SOFTER: 4q2kOivL1o21qCG4vEhaPi
+        # Hardcoded playlist ids: replace the example IDs below with the real playlist IDs.
+        run: |
+          node playlist-tool.js \
+            --cmd merge \
+            --source ${{ env.SOFT }} \
+            --source ${{ env.SOFT_ADDS }} \
+            --dest ${{ env.SOFTER }}

@@ -23,7 +23,7 @@ function logDryRunSummary(destinationTracks, uniqueSourceTracks, opts = {}) {
 }
 
 function printDuplicatesReport(dupes, opts = {}) {
-  const { names, verbose = false } = opts || {};
+  const { names, verbose = false } = opts;
   console.log('\n--- Duplicates Report ---');
   console.log(`Tracks appearing in more than one playlist: ${dupes.length}`);
 

@@ -1,8 +1,7 @@
 const arg = require('arg');
 const { authenticate, getAllTracks } = require('./src/spotify');
 const { getNonLocalSourceTracks, runCheckUnavailable } = require('./src/tracks');
-const { shuffleArray, logDryRunSummary, printHelp, printDuplicatesReport } = require('./src/ui');
-const { FLAGS } = require('./src/constants');
+const { shuffleArray, logDryRunSummary, printDuplicatesReport } = require('./src/ui');
 const { buildMap, toDuplicates } = require('./src/dupes');
 
 function parseArgs(tokens) {
@@ -32,15 +31,6 @@ function parseArgs(tokens) {
   };
 }
 
-function getSourceIdsFromEnv() {
-  const raw = process.env.SPOTIFY_SOURCE_PLAYLIST_IDS || '';
-  return raw.split(',').map(s => s.trim()).filter(Boolean);
-}
-
-function getDestIdFromEnv() {
-  return (process.env.SPOTIFY_DESTINATION_PLAYLIST_ID || '').trim();
-}
-
 async function doDryRun(sources, dest, verbose) {
   await authenticate();
   // require explicit --source and --dest flags
@@ -49,11 +39,9 @@ async function doDryRun(sources, dest, verbose) {
     process.exitCode = 1;
     return;
   }
-  const srcIds = sources;
-  const destId = dest;
   const [srcTracks, destTracks] = await Promise.all([
-    getNonLocalSourceTracks(srcIds, verbose),
-    getAllTracks(destId),
+    getNonLocalSourceTracks(sources, verbose),
+    getAllTracks(dest),
   ]);
   shuffleArray(srcTracks);
   logDryRunSummary(destTracks, srcTracks, { verbose });
@@ -67,14 +55,12 @@ async function doMerge(sources, dest) {
     process.exitCode = 1;
     return;
   }
-  const srcIds = sources;
-  const destId = dest;
-  const tracks = await getNonLocalSourceTracks(srcIds, false);
+  const tracks = await getNonLocalSourceTracks(sources, false);
   shuffleArray(tracks);
   const { clearPlaylist, addTracksInChunks } = require('./src/spotify');
   const failed = [];
-  await clearPlaylist(destId);
-  await addTracksInChunks(destId, tracks, failed);
+  await clearPlaylist(dest);
+  await addTracksInChunks(dest, tracks, failed);
   if (failed.length) {
     console.log('\n--- The following tracks failed to be added ---');
     failed.forEach(t => console.log(`- ${t.name} by ${t.artists.map(a => a.name).join(', ')} (URI: ${t.uri})`));
@@ -89,8 +75,7 @@ async function doCheckUnavailable(sources) {
     process.exitCode = 1;
     return;
   }
-  const srcIds = sources;
-  await runCheckUnavailable(srcIds, true);
+  await runCheckUnavailable(sources, true);
 }
 
 async function doDupes(verbose, ids) {
@@ -103,7 +88,7 @@ async function doDupes(verbose, ids) {
   const map = await buildMap(ids, verbose);
   const dupes = toDuplicates(map);
   const { getPlaylistName } = require('./src/spotify');
-  const pairs = await Promise.all(ids.map(async id => [id, await getPlaylistName(id, true)]));
+  const pairs = await Promise.all(ids.map(async id => [id, await getPlaylistName(id)]));
   const names = Object.fromEntries(pairs);
   printDuplicatesReport(dupes, { verbose, names });
 }
@@ -120,20 +105,72 @@ async function main() {
     process.exitCode = 2;
     return;
   }
-  if (cmd === 'merge') {
-    if (parsed.dryRun) return doDryRun(sources, dest, verbose);
-    return doMerge(sources, dest);
+
+  // normalize and validate playlist ids (accept raw id, open.spotify.com URL, or spotify:playlist:URI)
+  function normalizeId(input) {
+    if (!input || typeof input !== 'string') return null;
+    input = input.trim();
+    // spotify URI
+    const mUri = input.match(/^spotify:playlist:([A-Za-z0-9]+)$/i);
+    if (mUri) return mUri[1];
+    // open.spotify.com URL
+    const mUrl = input.match(/playlist\/([A-Za-z0-9]+)(?:\?|$)/i);
+    if (mUrl) return mUrl[1];
+    // raw id candidate
+    const candidate = input.replace(/\s+/g, '');
+    // Spotify playlist ids are 22 chars base62. Enforce that to catch bad ids early.
+    if (/^[A-Za-z0-9]{22}$/.test(candidate)) return candidate;
+    return null;
   }
-  // legacy command name 'merge-dry-run' is no longer supported
-  if (cmd === 'check-unavailable') return doCheckUnavailable(sources);
-  if (cmd === 'dupes') return doDupes(verbose, sources);
+
+  function validateIds(sourcesArr, destId, options = { requireDest: false }) {
+    const bad = [];
+    const normalizedSources = (sourcesArr || []).map(s => ({ raw: s, id: normalizeId(s) }));
+    normalizedSources.forEach(({ raw, id }) => { if (!id) bad.push({ raw, reason: 'invalid source id/URL' }); });
+    let normalizedDest = null;
+    if (options.requireDest) {
+      normalizedDest = normalizeId(destId);
+      if (!normalizedDest) bad.push({ raw: destId, reason: 'invalid destination id/URL' });
+    }
+    return { ok: bad.length === 0, bad, sources: normalizedSources.map(s => s.id).filter(Boolean), dest: normalizedDest };
+  }
+  if (cmd === 'merge') {
+    const res = validateIds(sources, dest, { requireDest: true });
+    if (!res.ok) {
+      console.error('Invalid playlist ids provided:');
+      res.bad.forEach(b => console.error(` - ${b.raw} (${b.reason})`));
+      console.error('\nPlease provide Spotify playlist IDs, playlist URLs (https://open.spotify.com/playlist/{id}) or spotify:playlist:{id} URIs.');
+      process.exitCode = 1;
+      return;
+    }
+    if (parsed.dryRun) return await doDryRun(res.sources, res.dest, verbose);
+    return await doMerge(res.sources, res.dest);
+  }
+  if (cmd === 'check-unavailable') {
+    const res = validateIds(sources, null, { requireDest: false });
+    if (!res.ok) {
+      console.error('Invalid source playlist ids provided:');
+      res.bad.forEach(b => console.error(` - ${b.raw} (${b.reason})`));
+      process.exitCode = 1;
+      return;
+    }
+    return await doCheckUnavailable(res.sources);
+  }
+  if (cmd === 'dupes') {
+    const res = validateIds(sources, null, { requireDest: false });
+    if (!res.ok) {
+      console.error('Invalid playlist ids provided for dupes:');
+      res.bad.forEach(b => console.error(` - ${b.raw} (${b.reason})`));
+      process.exitCode = 1;
+      return;
+    }
+    return await doDupes(verbose, res.sources);
+  }
   // unknown command -> fail with helpful message
   console.error(`Unknown command: ${cmd}`);
   const { printHelp } = require('./src/ui');
   printHelp();
   process.exitCode = 2;
-  return;
-
 }
 
 main();

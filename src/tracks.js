@@ -1,6 +1,5 @@
 const { getAllTracks } = require('./spotify');
 // Keep dependency on config minimal; verbosity is passed from CLI layer.
-const config = require('./config');
 
 async function getSourceTracks(sourcePlaylistIds, silent = false) {
   if (!silent) console.log('--- Fetching and Combining Source Tracks ---');

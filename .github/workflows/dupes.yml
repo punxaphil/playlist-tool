@@ -24,13 +24,12 @@ jobs:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
-          DUPES_PLAYLIST_IDS: ${{ secrets.DUPES_PLAYLIST_IDS }} # space- or comma-separated IDs
+          SOFT: 7xUa8Da5yH2PrFwLpPgAJr
+          SOFT_ADDS: 0eHnbTUBCBaDVXibzCSymN
+          TVEKSAMT: 4SNjbtv34S4Ra7TMNTnERL
         run: |
-          if [ -z "$DUPES_PLAYLIST_IDS" ]; then
-            echo "DUPES_PLAYLIST_IDS secret is not set. Set it to a list of playlist IDs (comma- or space-separated)."
-            exit 1
-          fi
-          IDS=$(echo "$DUPES_PLAYLIST_IDS" | tr ',' ' ')
-          echo "Running duplicates report for IDs: $IDS"
-          node playlist-tool.js dupes $IDS
+          node playlist-tool.js --cmd dupes \ 
+            --source ${{ env.SOFT }} \
+            --source ${{ env.SOFT_ADDS }} \
+            --source ${{ env.TVEKSAMT }}
 

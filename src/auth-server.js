@@ -11,7 +11,7 @@ function startServer(spotifyApi, scopes) {
     open(authorizeURL);
   });
 
-  app.get('/callback', async (req, res) => {
+  app.get('/callback', async(req, res) => {
     const { code } = req.query;
     if (!code) {
       res.send('Authorization failed. No code provided.');
