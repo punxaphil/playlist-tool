@@ -1,25 +1,3 @@
-function printHelp() {
-  console.log(`
-  Spotify Playlist Tool
-
-  Usage: node playlist-tool.js <command> [options]
-
-  Commands:
-    merge                 Merge source playlists into destination (uses env IDs)
-    merge-dry-run         Simulate the merge without making any changes
-    check-unavailable     List count of local (excluded) tracks in sources; with --verbose prints all
-    dupes <ids...>        Find songs present in more than one of the given playlist IDs
-
-  Options:
-    --verbose             Enable additional detail (samples, IDs next to names)
-    --help                Show this help message
-
-  Environment:
-    SPOTIFY_SOURCE_PLAYLIST_IDS   Comma-separated source playlist IDs
-    SPOTIFY_DESTINATION_PLAYLIST_ID Destination playlist ID
-  `);
-}
-
 function shuffleArray(array) {
   console.log('  - Shuffling tracks...');
   for (let i = array.length - 1; i > 0; i--) {
@@ -79,9 +57,31 @@ function printDuplicatesReport(dupes, opts = {}) {
   console.log('\n--- END REPORT ---');
 }
 
+function printHelp() {
+  console.log('\nUsage: node playlist-tool.js --cmd <command> [options]\n');
+  console.log('Commands:');
+  console.log('  merge            Merge one or more source playlists into a destination playlist');
+  console.log('  --dry-run        When used with --cmd merge, show what would change (no writes)');
+  console.log('  check-unavailable  Report unavailable tracks in source playlists');
+  console.log('  dupes            Report duplicate tracks across playlists');
+  console.log('\nOptions:');
+  console.log('  --cmd, -c <command>       Command to run (required)');
+  console.log('  --source, -s <id>         Repeatable source playlist id (one or more)');
+  console.log('  --dest, -d <id>           Destination playlist id (required for merge commands)');
+  console.log('  --verbose, -v             Show verbose output');
+  console.log("  --dry-run, -n             Don't perform writes; implies merge dry-run");
+  console.log('  --help, -h                Show this help');
+
+  console.log('\nExamples:');
+  console.log('  node playlist-tool.js --cmd merge --source SRC1 --source SRC2 --dest DEST');
+  console.log('  node playlist-tool.js --cmd merge --dry-run --source SRC1 --dest DEST --verbose');
+  console.log('  node playlist-tool.js --cmd check-unavailable --source SRC1 --source SRC2');
+  console.log('  node playlist-tool.js --cmd dupes --source PLAYLIST_A --source PLAYLIST_B --verbose\n');
+}
+
 module.exports = {
-  printHelp,
   shuffleArray,
   logDryRunSummary,
   printDuplicatesReport,
+  printHelp,
 };

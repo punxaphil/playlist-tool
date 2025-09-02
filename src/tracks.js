@@ -1,4 +1,5 @@
 const { getAllTracks } = require('./spotify');
+// Keep dependency on config minimal; verbosity is passed from CLI layer.
 const config = require('./config');
 
 async function getSourceTracks(sourcePlaylistIds, silent = false) {
@@ -15,11 +16,11 @@ async function getSourceTracks(sourcePlaylistIds, silent = false) {
   return uniqueTracks;
 }
 
-async function getNonLocalSourceTracks(sourcePlaylistIds) {
+async function getNonLocalSourceTracks(sourcePlaylistIds, verbose = false) {
   const uniqueTracks = await getSourceTracks(sourcePlaylistIds);
   const nonLocalTracks = uniqueTracks.filter(track => {
     const isLocal = track.uri.startsWith('spotify:local');
-    if (isLocal && config.isVerbose) {
+    if (isLocal && verbose) {
       console.log(`  - Filtering out local track: ${track.name} by ${track.artists.map(a => a.name).join(', ')} (URI: ${track.uri})`);
     }
     return !isLocal;
@@ -28,11 +29,11 @@ async function getNonLocalSourceTracks(sourcePlaylistIds) {
   return nonLocalTracks;
 }
 
-async function runCheckUnavailable(sourcePlaylistIds) {
+async function runCheckUnavailable(sourcePlaylistIds, verbose = false) {
   const uniqueSourceTracks = await getSourceTracks(sourcePlaylistIds, true);
   const localTracks = uniqueSourceTracks.filter(track => track.uri.startsWith('spotify:local'));
 
-  if (config.isVerbose) {
+  if (verbose) {
     localTracks.forEach(track => {
       console.log(`- ${track.name} by ${track.artists.map(a => a.name).join(', ')} (URI: ${track.uri})`);
     });
