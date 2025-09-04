@@ -1,3 +1,12 @@
+const EXCLUDED_PRINT_LIMIT = 50;
+const DEFAULT_SMTP_SERVER = 'smtp.gmail.com';
+const DEFAULT_SMTP_PORT = 465;
+
+module.exports = {
+  EXCLUDED_PRINT_LIMIT,
+  DEFAULT_SMTP_SERVER,
+  DEFAULT_SMTP_PORT,
+};
 const FLAGS = {
   DRY_RUN: '--dry-run',
   CHECK_UNAVAILABLE: '--check-unavailable',
