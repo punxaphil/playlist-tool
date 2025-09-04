@@ -17,15 +17,19 @@ async function getSourceTracks(sourcePlaylistIds, silent = false) {
 
 async function getNonLocalSourceTracks(sourcePlaylistIds, verbose = false) {
   const uniqueTracks = await getSourceTracks(sourcePlaylistIds);
+  const excluded = [];
   const nonLocalTracks = uniqueTracks.filter(track => {
     const isLocal = track.uri.startsWith('spotify:local');
-    if (isLocal && verbose) {
-      console.log(`  - Filtering out local track: ${track.name} by ${track.artists.map(a => a.name).join(', ')} (URI: ${track.uri})`);
+    if (isLocal) {
+      excluded.push(track);
+      if (verbose) {
+        console.log(`  - Filtering out local track: ${track.name} by ${track.artists.map(a => a.name).join(', ')} (URI: ${track.uri})`);
+      }
     }
     return !isLocal;
   });
   console.log(`Found ${nonLocalTracks.length} non-local tracks out of ${uniqueTracks.length} unique tracks.`);
-  return nonLocalTracks;
+  return { nonLocalTracks, excludedTracks: excluded };
 }
 
 async function runCheckUnavailable(sourcePlaylistIds, verbose = false) {

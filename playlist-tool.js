@@ -46,8 +46,15 @@ async function doDryRun(sources, dest, verbose) {
     getNonLocalSourceTracks(sources, verbose),
     getAllTracks(dest),
   ]);
-  shuffleArray(srcTracks);
-  logDryRunSummary(destTracks, srcTracks, { verbose });
+  // getNonLocalSourceTracks now returns { nonLocalTracks, excludedTracks }
+  const { nonLocalTracks: srcNonLocal, excludedTracks } = srcTracks;
+  shuffleArray(srcNonLocal);
+  logDryRunSummary(destTracks, srcNonLocal, { verbose });
+  if (excludedTracks && excludedTracks.length) {
+    console.log('\n--- Excluded tracks (will NOT be added) ---');
+    excludedTracks.slice(0, 50).forEach(t => console.log(`- ${t.name} by ${t.artists.map(a => a.name).join(', ')} (URI: ${t.uri})`));
+    if (excludedTracks.length > 50) console.log(`  ...and ${excludedTracks.length - 50} more`);
+  }
 }
 
 async function doMerge(sources, dest) {
@@ -57,12 +64,16 @@ async function doMerge(sources, dest) {
     process.exitCode = 1;
     return;
   }
-  const tracks = await getNonLocalSourceTracks(sources, false);
-  shuffleArray(tracks);
+  const tracksRes = await getNonLocalSourceTracks(sources, false);
+  const tracks = tracksRes.nonLocalTracks || [];
   const { clearPlaylist, addTracksInChunks } = require('./src/spotify');
   const failed = [];
   await clearPlaylist(dest);
   await addTracksInChunks(dest, tracks, failed);
+  if (tracksRes.excludedTracks && tracksRes.excludedTracks.length) {
+    console.log('\n--- Excluded tracks (not added) ---');
+    tracksRes.excludedTracks.forEach(t => console.log(`- ${t.name} by ${t.artists.map(a => a.name).join(', ')} (URI: ${t.uri})`));
+  }
   if (failed.length) {
     console.log('\n--- The following tracks failed to be added ---');
     failed.forEach(t => console.log(`- ${t.name} by ${t.artists.map(a => a.name).join(', ')} (URI: ${t.uri})`));
@@ -101,7 +112,7 @@ function buildTransportFromEnv() {
   const pass = process.env.SMTP_PASSWORD;
   const secure = port === 465;
   const auth = user && pass ? { user, pass } : undefined;
-  return { host,  port, secure, auth };
+  return { host, port, secure, auth };
 }
 
 async function sendEmailRaw(subject, body) {
