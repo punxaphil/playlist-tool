@@ -8,6 +8,7 @@ on:
 jobs:
   merge:
     uses: ./.github/workflows/playlist-tool.yml
+    secrets: inherit
     with:
       # SOFT, SOFT_ADDS, SOFTER
       args: "--cmd merge --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --dest 4q2kOivL1o21qCG4vEhaPi"

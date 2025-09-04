@@ -8,6 +8,7 @@ on:
 jobs:
   dupes:
     uses: ./.github/workflows/playlist-tool.yml
+    secrets: inherit
     with:
       # SOFT, SOFT_ADDS, TVEKSAMT
       args: "--cmd dupes --notify-email --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --source 4SNjbtv34S4Ra7TMNTnERL"
