@@ -6,9 +6,16 @@ on:
   workflow_dispatch: # Allows manual triggering
 
 jobs:
-  merge:
+  merge-1:
     uses: ./.github/workflows/playlist-tool.yml
     secrets: inherit
     with:
       # SOFT, SOFT_ADDS, SOFTER
       args: "--cmd merge --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --dest 4q2kOivL1o21qCG4vEhaPi"
+
+  merge-2:
+    uses: ./.github/workflows/playlist-tool.yml
+    secrets: inherit
+    with:
+      # Soft, Soft Adds, Slow, Tveksamt -> The Works
+      args: "--cmd merge --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --source 6AcvYEAjUk2aGakq3kgAEd --source 4SNjbtv34S4Ra7TMNTnERL --dest 7BIQkjAZ3kPqxKLlddSzbw"
