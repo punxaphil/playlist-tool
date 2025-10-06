@@ -10,7 +10,7 @@ jobs:
     uses: ./.github/workflows/playlist-tool.yml
     secrets: inherit
     with:
-      # SOFT, SOFT_ADDS, SOFTER
+      # SOFT, SOFT_ADDS -> Soft Complete
       args: "--cmd merge --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --dest 4q2kOivL1o21qCG4vEhaPi"
 
   merge-2:
@@ -19,3 +19,10 @@ jobs:
     with:
       # Soft, Soft Adds, Slow, Tveksamt -> The Works
       args: "--cmd merge --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --source 6AcvYEAjUk2aGakq3kgAEd --source 4SNjbtv34S4Ra7TMNTnERL --dest 7BIQkjAZ3kPqxKLlddSzbw"
+
+  merge-3:
+    uses: ./.github/workflows/playlist-tool.yml
+    secrets: inherit
+    with:
+      # Soft, Soft Adds, Slow -> Blend
+      args: "--cmd merge --source 7xUa8Da5yH2PrFwLpPgAJr --source 0eHnbTUBCBaDVXibzCSymN --source 6AcvYEAjUk2aGakq3kgAEd --dest 2MPFh98by4ebR3FTLrPaoY"
