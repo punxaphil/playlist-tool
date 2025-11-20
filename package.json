@@ -16,8 +16,8 @@
     "eslint-plugin-import": "^2.27.5"
   },
   "scripts": {
-  "lint": "eslint . --ext .js --max-warnings=0",
-  "lint:fix": "eslint . --ext .js --fix",
-  "ci:lint": "npm run lint"
+    "lint": "eslint . --ext .js --max-warnings=0",
+    "lint:fix": "eslint . --ext .js --fix",
+    "ci:lint": "npm run lint"
   }
 }

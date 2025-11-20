@@ -61,7 +61,8 @@ function printHelp() {
   console.log('\nUsage: node playlist-tool.js --cmd <command> [options]\n');
   console.log('Commands:');
   console.log('  merge            Merge one or more source playlists into a destination playlist');
-  console.log('  --dry-run        When used with --cmd merge, show what would change (no writes)');
+  console.log('  --dry-run        When used with merge or shuffle, show what would change (no writes)');
+  console.log('  shuffle          Shuffle the order of tracks inside a single playlist (use --dest)');
   console.log('  check-unavailable  Report unavailable tracks in source playlists');
   console.log('  dupes            Report duplicate tracks across playlists');
   console.log('\nOptions:');

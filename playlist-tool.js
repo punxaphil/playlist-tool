@@ -3,6 +3,7 @@ const arg = require('arg');
 const { buildMap, toDuplicates } = require('./src/dupes');
 const { getPlaylistName, authenticate } = require('./src/spotify');
 const { performMerge, printExcluded } = require('./src/commands/merge');
+const { shufflePlaylist } = require('./src/commands/shuffle');
 const { runCheckUnavailable } = require('./src/tracks');
 const { printDuplicatesReport, printHelp } = require('./src/ui');
 
@@ -27,11 +28,26 @@ async function handleMerge(sources, dest) {
   return failed.length;
 }
 
+function ensureShuffleDest(dest) {
+  if (dest) return true;
+  console.error('Shuffle command requires --dest <playlistId>.');
+  process.exitCode = 2;
+  return false;
+}
+
+async function handleShuffle(dest, opts) {
+  if (!ensureShuffleDest(dest)) return null;
+  const result = await shufflePlaylist(dest, opts);
+  if (result?.status === 'success') console.log(`Shuffle complete for playlist ${dest}.`);
+  if (result?.failed?.length || result?.status === 'blocked-local') process.exitCode = 1;
+  return result;
+}
+
 function parseArgs(tokens) {
   const parsed = arg({
-    '--verbose': Boolean,'-v':'--verbose','--cmd':String,'-c':'--cmd','--source':[String],'-s':'--source',
-    '--dest':String,'-d':'--dest','--dry-run':Boolean,'-n':'--dry-run','--notify-email':Boolean,'-m':'--notify-email',
-    '--help':Boolean,'-h':'--help',
+    '--verbose': Boolean, '-v': '--verbose', '--cmd': String, '-c': '--cmd', '--source': [String], '-s': '--source',
+    '--dest': String, '-d': '--dest', '--dry-run': Boolean, '-n': '--dry-run', '--notify-email': Boolean, '-m': '--notify-email',
+    '--help': Boolean, '-h': '--help',
   }, { argv: tokens, permissive: false });
   return { verbose: Boolean(parsed['--verbose']), cmd: parsed['--cmd'], dryRun: Boolean(parsed['--dry-run']), notifyEmail: Boolean(parsed['--notify-email']), help: Boolean(parsed['--help']), sources: parsed['--source'] || [], dest: parsed['--dest'] || null };
 }
@@ -44,6 +60,7 @@ async function main() {
   if (cmd === 'merge') return handleMerge(sources, dest);
   if (cmd === 'check-unavailable') return runCheckUnavailable(sources, true);
   if (cmd === 'dupes') return doDupes(verbose, sources);
+  if (cmd === 'shuffle') return handleShuffle(dest, parsed);
   console.error(`Unknown command: ${cmd}`);
   printHelp();
   process.exitCode = 2;

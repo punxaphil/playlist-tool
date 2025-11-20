@@ -1,0 +1,21 @@
+name: Shuffle Spotify Playlists
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Runs every day at 03:00 UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  shuffle:
+    name: Shuffle playlist ${{ matrix.playlist_id }}
+    strategy:
+      fail-fast: false
+      matrix:
+        playlist_id: [
+          '7xUa8Da5yH2PrFwLpPgAJr', # Soft
+          '6AcvYEAjUk2aGakq3kgAEd' # Slow
+        ]
+    uses: ./.github/workflows/playlist-tool.yml
+    secrets: inherit
+    with:
+      args: "--cmd shuffle --dest ${{ matrix.playlist_id }}"
